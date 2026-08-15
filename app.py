@@ -1,5 +1,6 @@
 import streamlit as st
 from src.ingestion.loader import load_dataset, get_dataset_info
+from src.profiling.cleaner import profile_dataset
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
@@ -24,6 +25,10 @@ if uploaded_file is not None:
 
         st.subheader("Data Preview")
         st.dataframe(df.head())
+
+        st.subheader("Data Profiling")
+        profile_df = profile_dataset(df)
+        st.dataframe(profile_df)
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
