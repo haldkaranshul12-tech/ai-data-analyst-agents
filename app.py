@@ -16,7 +16,12 @@ uploaded_file = st.file_uploader("Upload your dataset", type=["csv", "xlsx", "xl
 
 if uploaded_file is not None:
     try:
-        df = load_dataset(uploaded_file)
+        # Load the file fresh only when a new file is uploaded
+        if "df" not in st.session_state or st.session_state.get("filename") != uploaded_file.name:
+            st.session_state["df"] = load_dataset(uploaded_file)
+            st.session_state["filename"] = uploaded_file.name
+
+        df = st.session_state["df"]
         st.success(f"Loaded: {uploaded_file.name}")
 
         info = get_dataset_info(df)
@@ -41,9 +46,9 @@ if uploaded_file is not None:
         st.write(f"Duplicate rows found: *{dup_count}*")
 
         if st.button("Remove Duplicates"):
-            df = remove_duplicates(df)
-            st.success(f"Duplicates removed. New shape: {df.shape}")
-            st.dataframe(df.head())
+            st.session_state["df"] = remove_duplicates(df)
+            st.success(f"Duplicates removed. New shape: {st.session_state['df'].shape}")
+            st.rerun()
 
         st.write("Handle Missing Values")
         strategy = st.radio("Choose a strategy:", ["drop", "fill"])
@@ -54,11 +59,17 @@ if uploaded_file is not None:
             fill_value = None
 
         if st.button("Apply Missing Value Handling"):
-            cleaned_df = handle_missing_values(df, strategy=strategy, fill_value=fill_value)
-            st.success(f"Missing values handled. New shape: {cleaned_df.shape}")
-            st.dataframe(cleaned_df.head())
+            st.session_state["df"] = handle_missing_values(df, strategy=strategy, fill_value=fill_value)
+            st.success(f"Missing values handled. New shape: {st.session_state['df'].shape}")
+            st.rerun()
+
+        st.divider()
+        st.subheader("Current Cleaned Dataset")
+        st.dataframe(st.session_state["df"].head())
+        st.caption(f"Shape: {st.session_state['df'].shape[0]} rows × {st.session_state['df'].shape[1]} columns")
 
     except Exception as e:
-        st.error(f"Error loading dataset: {e}")
+        st.error(f"Error loading file: {e}")
 else:
-    st.info("upload a CSV or Excel file to get started.")
+    st.session_state.clear()
+    st.info("Upload a CSV or Excel file to get started.")
