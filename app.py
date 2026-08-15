@@ -6,7 +6,12 @@ from src.profiling.cleaner import (
     remove_duplicates,
     handle_missing_values,
 )
-from src.eda.analysis import get_descriptive_stats, get_categorical_summary
+from src.eda.analysis import (
+    get_descriptive_stats,
+    get_categorical_summary,
+    get_correlation_matrix,
+    get_group_summary,
+)
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
@@ -80,6 +85,23 @@ if uploaded_file is not None:
             st.dataframe(cat_summary)
         else:
             st.write("No categorical columns found.")
+
+        st.subheader("Correlation Matrix")
+        corr_matrix = get_correlation_matrix(st.session_state["df"])
+        st.dataframe(corr_matrix)
+
+        st.subheader("Group-wise Analysis")
+        numeric_cols = st.session_state["df"].select_dtypes(include="number").columns.tolist()
+        all_cols = st.session_state["df"].columns.tolist()
+
+        gcol1, gcol2, gcol3 = st.columns(3)
+        group_col = gcol1.selectbox("Group by column:", all_cols)
+        agg_col = gcol2.selectbox("Aggregate column (numeric):", numeric_cols)
+        agg_func = gcol3.selectbox("Aggregation:", ["mean", "sum", "count", "min", "max"])
+
+        if st.button("Run Group Analysis"):
+            group_result = get_group_summary(st.session_state["df"], group_col, agg_col, agg_func)
+            st.dataframe(group_result)
 
     except Exception as e:
         st.error(f"Error loading file: {e}")

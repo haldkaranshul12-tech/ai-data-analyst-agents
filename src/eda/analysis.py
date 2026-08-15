@@ -1,6 +1,6 @@
 """
 Module 3: Exploratory Data Analysis (EDA)
-Provides descriptive statistics for numeric and categorical columns.
+Provides descriptive statistics, correlation, and group-wise analysis.
 """
 import pandas as pd
 
@@ -8,14 +8,6 @@ import pandas as pd
 def get_descriptive_stats(df):
     """
     Returns descriptive statistics for numeric columns.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-
-    Returns
-    -------
-    pd.DataFrame with count, mean, std, min, max, quartiles
     """
     return df.describe()
 
@@ -24,14 +16,6 @@ def get_categorical_summary(df):
     """
     Returns a summary of categorical (non-numeric) columns:
     unique value count and most frequent value.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-
-    Returns
-    -------
-    pd.DataFrame with column, unique_count, most_common, most_common_count
     """
     cat_cols = df.select_dtypes(include=["object", "category"]).columns
 
@@ -46,3 +30,31 @@ def get_categorical_summary(df):
         })
 
     return pd.DataFrame(summary)
+
+
+def get_correlation_matrix(df):
+    """
+    Returns the correlation matrix for numeric columns only.
+    """
+    numeric_df = df.select_dtypes(include="number")
+    return numeric_df.corr()
+
+
+def get_group_summary(df, group_col, agg_col, agg_func="mean"):
+    """
+    Groups the dataframe by group_col and aggregates agg_col.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    group_col : str - column to group by (e.g. "Sex")
+    agg_col : str - numeric column to aggregate (e.g. "Age")
+    agg_func : str - "mean", "sum", "count", "min", "max"
+
+    Returns
+    -------
+    pd.DataFrame with grouped results
+    """
+    result = df.groupby(group_col)[agg_col].agg(agg_func).reset_index()
+    result.columns = [group_col, f"{agg_func}_{agg_col}"]
+    return result
