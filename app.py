@@ -6,6 +6,7 @@ from src.profiling.cleaner import (
     remove_duplicates,
     handle_missing_values,
 )
+from src.eda.analysis import get_descriptive_stats, get_categorical_summary
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
@@ -16,7 +17,6 @@ uploaded_file = st.file_uploader("Upload your dataset", type=["csv", "xlsx", "xl
 
 if uploaded_file is not None:
     try:
-        # Load the file fresh only when a new file is uploaded
         if "df" not in st.session_state or st.session_state.get("filename") != uploaded_file.name:
             st.session_state["df"] = load_dataset(uploaded_file)
             st.session_state["filename"] = uploaded_file.name
@@ -43,7 +43,7 @@ if uploaded_file is not None:
         st.subheader("Data Cleaning")
 
         dup_count = find_duplicates(df)
-        st.write(f"Duplicate rows found: *{dup_count}*")
+        st.write(f"Duplicate rows found: **{dup_count}**")
 
         if st.button("Remove Duplicates"):
             st.session_state["df"] = remove_duplicates(df)
@@ -67,6 +67,19 @@ if uploaded_file is not None:
         st.subheader("Current Cleaned Dataset")
         st.dataframe(st.session_state["df"].head())
         st.caption(f"Shape: {st.session_state['df'].shape[0]} rows × {st.session_state['df'].shape[1]} columns")
+
+        st.divider()
+        st.header("📊 Exploratory Data Analysis")
+
+        st.subheader("Descriptive Statistics (Numeric Columns)")
+        st.dataframe(get_descriptive_stats(st.session_state["df"]))
+
+        st.subheader("Categorical Columns Summary")
+        cat_summary = get_categorical_summary(st.session_state["df"])
+        if not cat_summary.empty:
+            st.dataframe(cat_summary)
+        else:
+            st.write("No categorical columns found.")
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
