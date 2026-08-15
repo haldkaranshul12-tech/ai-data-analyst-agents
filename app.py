@@ -18,6 +18,7 @@ from src.visualization.charts import (
     histogram_chart,
     scatter_chart,
     heatmap_chart,
+    auto_select_chart,
 )
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
@@ -117,10 +118,22 @@ if uploaded_file is not None:
                 st.dataframe(group_result)
 
         with tab5:
-            st.subheader("Charts")
             current_df = st.session_state["df"]
             numeric_cols = current_df.select_dtypes(include="number").columns.tolist()
             all_cols = current_df.columns.tolist()
+
+            st.subheader("Auto Chart (recommended for you)")
+            acol1, acol2 = st.columns(2)
+            auto_col1 = acol1.selectbox("Column 1:", all_cols, key="auto_col1")
+            auto_col2 = acol2.selectbox("Column 2 (optional):", [None] + all_cols, key="auto_col2")
+
+            if st.button("Auto-Generate Chart"):
+                fig, chart_used = auto_select_chart(current_df, auto_col1, auto_col2)
+                st.caption(f"Auto-selected: {chart_used}")
+                st.plotly_chart(fig)
+
+            st.divider()
+            st.subheader("Manual Charts")
 
             chart_type = st.selectbox(
                 "Choose chart type:",
