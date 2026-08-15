@@ -27,3 +27,22 @@ def load_dataset(uploaded_file):
         raise ValueError("Unsupported file type. Please upload a .csv or .xlsx file.")
 
     return df
+def get_dataset_info(df):
+    """
+    Returns basic structural info about the dataset.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+
+    Returns
+    -------
+    dict with rows, columns, column names, and column data types
+    """
+    info = {
+        "rows": df.shape[0],
+        "columns": df.shape[1],
+        "column_names": list(df.columns),
+        "dtypes": df.dtypes.astype(str).to_dict(),
+    }
+    return info
