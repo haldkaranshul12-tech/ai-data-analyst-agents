@@ -12,10 +12,17 @@ from src.eda.analysis import (
     get_correlation_matrix,
     get_group_summary,
 )
+from src.visualization.charts import (
+    bar_chart,
+    line_chart,
+    histogram_chart,
+    scatter_chart,
+    heatmap_chart,
+)
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
-st.title("🤖 AI Data Analyst Agent")
+st.title("AI Data Analyst Agent")
 st.caption("Upload a dataset, explore it, and ask questions in plain English.")
 
 uploaded_file = st.file_uploader("Upload your dataset", type=["csv", "xlsx", "xls"])
@@ -34,11 +41,12 @@ if uploaded_file is not None:
         col1.metric("Rows", info["rows"])
         col2.metric("Columns", info["columns"])
 
-        tab1, tab2, tab3, tab4 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "Overview & Cleaning",
             "Descriptive Stats",
             "Correlation",
             "Group Analysis",
+            "Charts",
         ])
 
         with tab1:
@@ -107,6 +115,46 @@ if uploaded_file is not None:
             if st.button("Run Group Analysis"):
                 group_result = get_group_summary(st.session_state["df"], group_col, agg_col, agg_func)
                 st.dataframe(group_result)
+
+        with tab5:
+            st.subheader("Charts")
+            current_df = st.session_state["df"]
+            numeric_cols = current_df.select_dtypes(include="number").columns.tolist()
+            all_cols = current_df.columns.tolist()
+
+            chart_type = st.selectbox(
+                "Choose chart type:",
+                ["Bar", "Line", "Histogram", "Scatter", "Heatmap"],
+            )
+
+            if chart_type == "Bar":
+                x_col = st.selectbox("X-axis:", all_cols, key="bar_x")
+                y_col = st.selectbox("Y-axis:", numeric_cols, key="bar_y")
+                if st.button("Generate Bar Chart"):
+                    st.plotly_chart(bar_chart(current_df, x_col, y_col))
+
+            elif chart_type == "Line":
+                x_col = st.selectbox("X-axis:", all_cols, key="line_x")
+                y_col = st.selectbox("Y-axis:", numeric_cols, key="line_y")
+                if st.button("Generate Line Chart"):
+                    st.plotly_chart(line_chart(current_df, x_col, y_col))
+
+            elif chart_type == "Histogram":
+                col = st.selectbox("Column:", numeric_cols, key="hist_col")
+                if st.button("Generate Histogram"):
+                    st.plotly_chart(histogram_chart(current_df, col))
+
+            elif chart_type == "Scatter":
+                x_col = st.selectbox("X-axis:", numeric_cols, key="scatter_x")
+                y_col = st.selectbox("Y-axis:", numeric_cols, key="scatter_y")
+                color_col = st.selectbox("Color by (optional):", [None] + all_cols, key="scatter_color")
+                if st.button("Generate Scatter Plot"):
+                    st.plotly_chart(scatter_chart(current_df, x_col, y_col, color_col))
+
+            elif chart_type == "Heatmap":
+                if st.button("Generate Heatmap"):
+                    corr = get_correlation_matrix(current_df)
+                    st.plotly_chart(heatmap_chart(corr))
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
