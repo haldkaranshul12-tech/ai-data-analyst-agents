@@ -20,6 +20,7 @@ from src.visualization.charts import (
     heatmap_chart,
     auto_select_chart,
 )
+from src.visualization.llm_viz_agent import interpret_chart_request
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
@@ -122,6 +123,42 @@ if uploaded_file is not None:
             numeric_cols = current_df.select_dtypes(include="number").columns.tolist()
             all_cols = current_df.columns.tolist()
 
+            st.subheader("Ask AI to Create a Chart")
+            user_query = st.text_input(
+                "Describe the chart you want:",
+                placeholder="e.g. show me age distribution",
+            )
+
+            if st.button("Ask AI"):
+                if user_query.strip() == "":
+                    st.warning("Please type a request first.")
+                else:
+                    with st.spinner("Thinking..."):
+                        result = interpret_chart_request(user_query, all_cols)
+
+                    chart_type = result.get("chart_type")
+                    c1 = result.get("col1")
+                    c2 = result.get("col2")
+                    st.caption(f"AI chose: {chart_type} | col1={c1} | col2={c2}")
+
+                    try:
+                        if chart_type == "histogram":
+                            st.plotly_chart(histogram_chart(current_df, c1))
+                        elif chart_type == "bar":
+                            st.plotly_chart(bar_chart(current_df, c1, c2))
+                        elif chart_type == "line":
+                            st.plotly_chart(line_chart(current_df, c1, c2))
+                        elif chart_type == "scatter":
+                            st.plotly_chart(scatter_chart(current_df, c1, c2))
+                        elif chart_type == "heatmap":
+                            corr = get_correlation_matrix(current_df)
+                            st.plotly_chart(heatmap_chart(corr))
+                        else:
+                            st.error("Could not determine a suitable chart.")
+                    except Exception as chart_error:
+                        st.error(f"Could not create chart: {chart_error}")
+
+            st.divider()
             st.subheader("Auto Chart (recommended for you)")
             acol1, acol2 = st.columns(2)
             auto_col1 = acol1.selectbox("Column 1:", all_cols, key="auto_col1")
@@ -135,36 +172,36 @@ if uploaded_file is not None:
             st.divider()
             st.subheader("Manual Charts")
 
-            chart_type = st.selectbox(
+            chart_type_manual = st.selectbox(
                 "Choose chart type:",
                 ["Bar", "Line", "Histogram", "Scatter", "Heatmap"],
             )
 
-            if chart_type == "Bar":
+            if chart_type_manual == "Bar":
                 x_col = st.selectbox("X-axis:", all_cols, key="bar_x")
                 y_col = st.selectbox("Y-axis:", numeric_cols, key="bar_y")
                 if st.button("Generate Bar Chart"):
                     st.plotly_chart(bar_chart(current_df, x_col, y_col))
 
-            elif chart_type == "Line":
+            elif chart_type_manual == "Line":
                 x_col = st.selectbox("X-axis:", all_cols, key="line_x")
                 y_col = st.selectbox("Y-axis:", numeric_cols, key="line_y")
                 if st.button("Generate Line Chart"):
                     st.plotly_chart(line_chart(current_df, x_col, y_col))
 
-            elif chart_type == "Histogram":
+            elif chart_type_manual == "Histogram":
                 col = st.selectbox("Column:", numeric_cols, key="hist_col")
                 if st.button("Generate Histogram"):
                     st.plotly_chart(histogram_chart(current_df, col))
 
-            elif chart_type == "Scatter":
+            elif chart_type_manual == "Scatter":
                 x_col = st.selectbox("X-axis:", numeric_cols, key="scatter_x")
                 y_col = st.selectbox("Y-axis:", numeric_cols, key="scatter_y")
                 color_col = st.selectbox("Color by (optional):", [None] + all_cols, key="scatter_color")
                 if st.button("Generate Scatter Plot"):
                     st.plotly_chart(scatter_chart(current_df, x_col, y_col, color_col))
 
-            elif chart_type == "Heatmap":
+            elif chart_type_manual == "Heatmap":
                 if st.button("Generate Heatmap"):
                     corr = get_correlation_matrix(current_df)
                     st.plotly_chart(heatmap_chart(corr))
