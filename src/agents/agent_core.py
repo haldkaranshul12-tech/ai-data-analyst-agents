@@ -256,10 +256,12 @@ def ask_data_analyst(user_question, df, chat_history=None, retry=True):
     tool_function = AVAILABLE_TOOLS[function_name]
 
     try:
-        result = tool_function(df, **function_args)
+        if function_args:
+            result = tool_function(df, **function_args)
+        else:
+            result = tool_function(df)
     except Exception as e:
         return f"I tried to analyze this but ran into an error: {e}"
-
     if used_fallback:
         return f"Here's what I found: {result}"
 
