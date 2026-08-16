@@ -1,11 +1,17 @@
 ﻿"""
 Module 6: Insights & Report Generation
-Automatically generates key insights and recommendations from the dataset.
+Automatically generates key insights, recommendations, and PDF reports.
 """
 import os
+import io
 import pandas as pd
 from groq import Groq
 from dotenv import load_dotenv
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
 
 load_dotenv()
 
@@ -95,3 +101,66 @@ Respond with only the bullet points, one per line, starting each with "- ".
     )
 
     return response.choices[0].message.content
+
+
+def generate_pdf_report(df, filename_label, insights_text, recommendations_text):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title_style = ParagraphStyle("TitleStyle", parent=styles["Title"], fontSize=20)
+    heading_style = styles["Heading2"]
+    normal_style = styles["Normal"]
+
+    elements.append(Paragraph("AI Data Analyst Report", title_style))
+    elements.append(Spacer(1, 12))
+    elements.append(Paragraph(f"Dataset: {filename_label}", normal_style))
+    elements.append(Paragraph(f"Rows: {df.shape[0]} | Columns: {df.shape[1]}", normal_style))
+    elements.append(Spacer(1, 20))
+
+    elements.append(Paragraph("Key Insights", heading_style))
+    elements.append(Spacer(1, 8))
+    if insights_text:
+        for line in insights_text.split("\n"):
+            line = line.strip().lstrip("- ").strip()
+            if line:
+                elements.append(Paragraph(f"&bull; {line}", normal_style))
+                elements.append(Spacer(1, 4))
+    else:
+        elements.append(Paragraph("No insights generated yet.", normal_style))
+
+    elements.append(Spacer(1, 16))
+    elements.append(Paragraph("Recommendations", heading_style))
+    elements.append(Spacer(1, 8))
+    if recommendations_text:
+        for line in recommendations_text.split("\n"):
+            line = line.strip().lstrip("- ").strip()
+            if line:
+                elements.append(Paragraph(f"&bull; {line}", normal_style))
+                elements.append(Spacer(1, 4))
+    else:
+        elements.append(Paragraph("No recommendations generated yet.", normal_style))
+
+    elements.append(Spacer(1, 16))
+    elements.append(Paragraph("Column Overview", heading_style))
+    elements.append(Spacer(1, 8))
+
+    table_data = [["Column", "Type", "Missing"]]
+    missing_counts = df.isnull().sum()
+    for col in df.columns:
+        table_data.append([str(col), str(df[col].dtype), str(missing_counts[col])])
+
+    table = Table(table_data, colWidths=[200, 100, 100])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4472C4")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F2F2F2")]),
+    ]))
+    elements.append(table)
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer

@@ -22,8 +22,7 @@ from src.visualization.charts import (
 )
 from src.visualization.llm_viz_agent import interpret_chart_request
 from src.agents.agent_core import ask_data_analyst
-from src.reports.report_generator import generate_key_insights, generate_recommendations
-
+from src.reports.report_generator import generate_key_insights, generate_recommendations, generate_pdf_report
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
 st.title("AI Data Analyst Agent")
@@ -260,6 +259,33 @@ if uploaded_file is not None:
 
             if st.session_state.get("recommendations"):
                 st.markdown(st.session_state["recommendations"])
+
+            st.divider()
+            st.subheader("Download Full Report")
+
+            if st.button("Generate PDF Report"):
+                insights_text = st.session_state.get("insights", "")
+                recommendations_text = st.session_state.get("recommendations", "")
+
+                if not insights_text or not recommendations_text:
+                    st.warning("Please generate both Insights and Recommendations first.")
+                else:
+                    with st.spinner("Building PDF..."):
+                        pdf_buffer = generate_pdf_report(
+                            st.session_state["df"],
+                            st.session_state["filename"],
+                            insights_text,
+                            recommendations_text,
+                        )
+                    st.session_state["pdf_buffer"] = pdf_buffer
+
+            if st.session_state.get("pdf_buffer"):
+                st.download_button(
+                    label="Download PDF Report",
+                    data=st.session_state["pdf_buffer"],
+                    file_name="data_analyst_report.pdf",
+                    mime="application/pdf",
+                )
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
