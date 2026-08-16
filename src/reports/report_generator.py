@@ -68,3 +68,30 @@ Respond with only the bullet points, one per line, starting each with "- ".
     )
 
     return response.choices[0].message.content
+
+
+def generate_recommendations(df):
+    dataset_summary = build_dataset_summary(df)
+
+    prompt = f"""Based on the following dataset summary, generate 4-6 practical
+recommendations for someone working with this data. Focus on data quality
+improvements (handling missing values, duplicates), potential feature
+engineering ideas, and suggestions for further analysis. Write each
+recommendation as a short, actionable bullet point in plain English.
+
+Dataset summary:
+{dataset_summary}
+
+Respond with only the bullet points, one per line, starting each with "- ".
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": "You are a skilled data analyst who gives practical, actionable recommendations."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.3,
+    )
+
+    return response.choices[0].message.content

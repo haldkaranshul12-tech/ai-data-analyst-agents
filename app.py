@@ -22,7 +22,7 @@ from src.visualization.charts import (
 )
 from src.visualization.llm_viz_agent import interpret_chart_request
 from src.agents.agent_core import ask_data_analyst
-from src.reports.report_generator import generate_key_insights
+from src.reports.report_generator import generate_key_insights, generate_recommendations
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
@@ -248,6 +248,18 @@ if uploaded_file is not None:
 
             if st.session_state.get("insights"):
                 st.markdown(st.session_state["insights"])
+
+            st.divider()
+            st.subheader("Recommendations")
+            st.caption("Practical suggestions for working with this dataset.")
+
+            if st.button("Generate Recommendations"):
+                with st.spinner("Thinking of recommendations..."):
+                    recommendations = generate_recommendations(st.session_state["df"])
+                st.session_state["recommendations"] = recommendations
+
+            if st.session_state.get("recommendations"):
+                st.markdown(st.session_state["recommendations"])
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
