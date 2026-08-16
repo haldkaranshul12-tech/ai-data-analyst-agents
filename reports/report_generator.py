@@ -1,4 +1,4 @@
-﻿"""
+"""
 Module 6: Insights & Report Generation
 Automatically generates key insights and recommendations from the dataset.
 """
@@ -13,7 +13,12 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def build_dataset_summary(df):
+    """
+    Builds a compact text summary of the dataset (stats, missing values,
+    correlations) that can be fed to the LLM to generate insights.
+    """
     summary_parts = []
+
     summary_parts.append(f"Dataset shape: {df.shape[0]} rows, {df.shape[1]} columns")
     summary_parts.append(f"Columns: {', '.join(df.columns.tolist())}")
 
@@ -44,6 +49,10 @@ def build_dataset_summary(df):
 
 
 def generate_key_insights(df):
+    """
+    Sends a dataset summary to the LLM and asks it to generate
+    key insights in plain English, as a bulleted list.
+    """
     dataset_summary = build_dataset_summary(df)
 
     prompt = f"""Based on the following dataset summary, generate 5-7 key insights

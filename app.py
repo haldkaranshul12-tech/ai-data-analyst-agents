@@ -22,6 +22,7 @@ from src.visualization.charts import (
 )
 from src.visualization.llm_viz_agent import interpret_chart_request
 from src.agents.agent_core import ask_data_analyst
+from src.reports.report_generator import generate_key_insights
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
@@ -45,13 +46,14 @@ if uploaded_file is not None:
         col1.metric("Rows", info["rows"])
         col2.metric("Columns", info["columns"])
 
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
             "Overview & Cleaning",
             "Descriptive Stats",
             "Correlation",
             "Group Analysis",
             "Charts",
             "Ask Questions",
+            "Key Insights",
         ])
 
         with tab1:
@@ -234,6 +236,18 @@ if uploaded_file is not None:
                     st.markdown(f"**Q: {q}**")
                     st.write(a)
                     st.markdown("---")
+
+        with tab7:
+            st.subheader("Automatic Key Insights")
+            st.caption("Let AI analyze your dataset and surface the most important patterns.")
+
+            if st.button("Generate Insights"):
+                with st.spinner("Analyzing your dataset..."):
+                    insights = generate_key_insights(st.session_state["df"])
+                st.session_state["insights"] = insights
+
+            if st.session_state.get("insights"):
+                st.markdown(st.session_state["insights"])
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
