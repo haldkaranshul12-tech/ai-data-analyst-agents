@@ -201,12 +201,16 @@ def ask_data_analyst(user_question, df, chat_history=None, retry=True):
         {
             "role": "system",
             "content": (
-                "You are a helpful data analyst. You have access to tools that "
-                "can compute statistics on a dataset. Use the appropriate tool "
-                "to answer the user's question. Only answer questions related "
-                "to the dataset. Use the conversation history to understand "
-                "follow-up questions (e.g. 'what about for females?' refers back "
-                "to the previous question's topic)."
+                f"You are a helpful data analyst. The dataset has these columns: {column_names}. "
+                "You have access to tools that can compute statistics on this dataset. "
+                "Use the appropriate tool to answer the user's question. "
+                "IMPORTANT: Only answer questions that relate to this dataset and its columns. "
+                "If the user asks something unrelated to the dataset (general knowledge, "
+                "opinions, jokes, coding help, or anything not about this data), "
+                "politely respond that you can only answer questions about the uploaded dataset, "
+                "and do NOT call any tool in that case. "
+                "Use the conversation history to understand follow-up questions "
+                "(e.g. 'what about for females?' refers back to the previous question's topic)."
             ),
         },
     ]
