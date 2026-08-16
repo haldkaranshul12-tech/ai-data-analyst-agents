@@ -220,7 +220,11 @@ if uploaded_file is not None:
                     st.warning("Please type a question first.")
                 else:
                     with st.spinner("Analyzing..."):
-                        answer = ask_data_analyst(question, st.session_state["df"])
+                        answer = ask_data_analyst(
+                            question,
+                            st.session_state["df"],
+                            chat_history=st.session_state["chat_history"],
+                        )
                     st.session_state["chat_history"].append((question, answer))
 
             if st.session_state.get("chat_history"):

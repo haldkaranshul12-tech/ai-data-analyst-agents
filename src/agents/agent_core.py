@@ -184,11 +184,15 @@ def build_tool_definitions(column_names):
     ]
 
 
-def ask_data_analyst(user_question, df, retry=True):
+def ask_data_analyst(user_question, df, chat_history=None, retry=True):
     """
     Main agent function: takes a natural language question and the dataset,
     lets the LLM pick and call the right tool, runs it, and returns a
-    plain-English answer.
+    plain-English answer. Uses chat_history for follow-up context.
+
+    Parameters
+    ----------
+    chat_history : list of (question, answer) tuples from earlier in the conversation
     """
     column_names = df.columns.tolist()
     tools = build_tool_definitions(column_names)
@@ -200,11 +204,20 @@ def ask_data_analyst(user_question, df, retry=True):
                 "You are a helpful data analyst. You have access to tools that "
                 "can compute statistics on a dataset. Use the appropriate tool "
                 "to answer the user's question. Only answer questions related "
-                "to the dataset."
+                "to the dataset. Use the conversation history to understand "
+                "follow-up questions (e.g. 'what about for females?' refers back "
+                "to the previous question's topic)."
             ),
         },
-        {"role": "user", "content": user_question},
     ]
+
+    # Add prior conversation turns for context (limit to last 5 to keep it light)
+    if chat_history:
+        for past_q, past_a in chat_history[-5:]:
+            messages.append({"role": "user", "content": past_q})
+            messages.append({"role": "assistant", "content": past_a})
+
+    messages.append({"role": "user", "content": user_question})
 
     function_name = None
     function_args = None
@@ -228,7 +241,6 @@ def ask_data_analyst(user_question, df, retry=True):
         function_args = json.loads(tool_call.function.arguments)
 
     except Exception as e:
-        # Try to rescue a malformed tool call from the error text
         function_name, function_args = _extract_failed_tool_call(str(e))
         if function_name is None:
             return "I had trouble understanding that question. Could you try rephrasing it more simply?"
@@ -245,7 +257,6 @@ def ask_data_analyst(user_question, df, retry=True):
         return f"I tried to analyze this but ran into an error: {e}"
 
     if used_fallback:
-        # Skip the second LLM call and just present the raw result nicely
         return f"Here's what I found: {result}"
 
     messages.append({
