@@ -21,6 +21,7 @@ from src.visualization.charts import (
     auto_select_chart,
 )
 from src.visualization.llm_viz_agent import interpret_chart_request
+from src.agents.agent_core import ask_data_analyst
 
 st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
 
@@ -34,6 +35,7 @@ if uploaded_file is not None:
         if "df" not in st.session_state or st.session_state.get("filename") != uploaded_file.name:
             st.session_state["df"] = load_dataset(uploaded_file)
             st.session_state["filename"] = uploaded_file.name
+            st.session_state["chat_history"] = []
 
         df = st.session_state["df"]
         st.success(f"Loaded: {uploaded_file.name}")
@@ -43,12 +45,13 @@ if uploaded_file is not None:
         col1.metric("Rows", info["rows"])
         col2.metric("Columns", info["columns"])
 
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "Overview & Cleaning",
             "Descriptive Stats",
             "Correlation",
             "Group Analysis",
             "Charts",
+            "Ask Questions",
         ])
 
         with tab1:
@@ -205,6 +208,28 @@ if uploaded_file is not None:
                 if st.button("Generate Heatmap"):
                     corr = get_correlation_matrix(current_df)
                     st.plotly_chart(heatmap_chart(corr))
+
+        with tab6:
+            st.subheader("Ask Questions About Your Data")
+            st.caption("Example: What's the average age? How many people survived? What's the most common embarkation point?")
+
+            question = st.text_input("Type your question:", key="qa_input")
+
+            if st.button("Get Answer"):
+                if question.strip() == "":
+                    st.warning("Please type a question first.")
+                else:
+                    with st.spinner("Analyzing..."):
+                        answer = ask_data_analyst(question, st.session_state["df"])
+                    st.session_state["chat_history"].append((question, answer))
+
+            if st.session_state.get("chat_history"):
+                st.divider()
+                st.subheader("Conversation History")
+                for q, a in reversed(st.session_state["chat_history"]):
+                    st.markdown(f"**Q: {q}**")
+                    st.write(a)
+                    st.markdown("---")
 
     except Exception as e:
         st.error(f"Error loading file: {e}")
