@@ -79,7 +79,7 @@ GROQ_API_KEY=your_key_here
 
 ## Project Status
 
-Built as a 30-day minor project. All 4 core modules are complete:
+Built as a minor project. All 4 core modules are complete:
 
 - ✅ Module 1 — Data Ingestion & Profiling
 - ✅ Module 2 — EDA & Visualization
