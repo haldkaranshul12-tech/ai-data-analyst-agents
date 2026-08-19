@@ -68,8 +68,7 @@ Respond with only the bullet points, one per line, starting each with "- ".
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
+        model="openai/gpt-oss-120b",        messages=[
             {"role": "system", "content": "You are a skilled data analyst who writes clear, concise insights."},
             {"role": "user", "content": prompt},
         ],

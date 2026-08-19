@@ -229,8 +229,7 @@ def ask_data_analyst(user_question, df, chat_history=None, retry=True):
 
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
+            model="openai/gpt-oss-120b",            messages=messages,
             tools=tools,
             tool_choice="auto",
             temperature=0,

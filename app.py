@@ -22,13 +22,46 @@ from src.visualization.charts import (
 )
 from src.visualization.llm_viz_agent import interpret_chart_request
 from src.agents.agent_core import ask_data_analyst
-from src.reports.report_generator import generate_key_insights, generate_recommendations, generate_pdf_report
-st.set_page_config(page_title="AI Data Analyst Agent", layout="wide")
+from src.reports.report_generator import (
+    generate_key_insights,
+    generate_recommendations,
+    generate_pdf_report,
+)
 
-st.title("AI Data Analyst Agent")
+st.set_page_config(
+    page_title="AI Data Analyst Agent",
+    page_icon="📊",
+    layout="wide",
+)
+
+# ---------------- Sidebar ----------------
+with st.sidebar:
+    st.title("📊 AI Data Analyst")
+    st.caption("Your personal AI-powered data analysis assistant")
+    st.divider()
+
+    st.markdown("### How it works")
+    st.markdown(
+        "1. Upload a CSV or Excel file\n"
+        "2. Explore, clean, and visualize your data\n"
+        "3. Ask questions in plain English\n"
+        "4. Download a full PDF report"
+    )
+    st.divider()
+
+    if "df" in st.session_state:
+        st.markdown("### Current Dataset")
+        st.write(f"**File:** {st.session_state.get('filename', 'N/A')}")
+        st.write(f"**Rows:** {st.session_state['df'].shape[0]}")
+        st.write(f"**Columns:** {st.session_state['df'].shape[1]}")
+    else:
+        st.info("No dataset loaded yet.")
+
+# ---------------- Main Page ----------------
+st.title("🤖 AI Data Analyst Agent")
 st.caption("Upload a dataset, explore it, and ask questions in plain English.")
 
-uploaded_file = st.file_uploader("Upload your dataset", type=["csv", "xlsx", "xls"])
+uploaded_file = st.file_uploader("📁 Upload your dataset", type=["csv", "xlsx", "xls"])
 
 if uploaded_file is not None:
     try:
@@ -36,23 +69,27 @@ if uploaded_file is not None:
             st.session_state["df"] = load_dataset(uploaded_file)
             st.session_state["filename"] = uploaded_file.name
             st.session_state["chat_history"] = []
+            st.session_state["insights"] = None
+            st.session_state["recommendations"] = None
+            st.session_state["pdf_buffer"] = None
 
         df = st.session_state["df"]
-        st.success(f"Loaded: {uploaded_file.name}")
+        st.success(f"✅ Loaded: {uploaded_file.name}")
 
         info = get_dataset_info(df)
-        col1, col2 = st.columns(2)
-        col1.metric("Rows", info["rows"])
-        col2.metric("Columns", info["columns"])
+        col1, col2, col3 = st.columns(3)
+        col1.metric("📏 Rows", info["rows"])
+        col2.metric("📐 Columns", info["columns"])
+        col3.metric("🔁 Duplicates", find_duplicates(df))
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-            "Overview & Cleaning",
-            "Descriptive Stats",
-            "Correlation",
-            "Group Analysis",
-            "Charts",
-            "Ask Questions",
-            "Key Insights",
+            "🧹 Overview & Cleaning",
+            "📊 Descriptive Stats",
+            "🔗 Correlation",
+            "📈 Group Analysis",
+            "📉 Charts",
+            "💬 Ask Questions",
+            "✨ Key Insights",
         ])
 
         with tab1:
@@ -68,9 +105,9 @@ if uploaded_file is not None:
 
             st.subheader("Data Cleaning")
             dup_count = find_duplicates(df)
-            st.write(f"Duplicate rows found: {dup_count}")
+            st.write(f"Duplicate rows found: **{dup_count}**")
 
-            if st.button("Remove Duplicates"):
+            if st.button("🗑️ Remove Duplicates"):
                 st.session_state["df"] = remove_duplicates(df)
                 st.success(f"Duplicates removed. New shape: {st.session_state['df'].shape}")
                 st.rerun()
@@ -82,7 +119,7 @@ if uploaded_file is not None:
             else:
                 fill_value = None
 
-            if st.button("Apply Missing Value Handling"):
+            if st.button("🧼 Apply Missing Value Handling"):
                 st.session_state["df"] = handle_missing_values(df, strategy=strategy, fill_value=fill_value)
                 st.success(f"Missing values handled. New shape: {st.session_state['df'].shape}")
                 st.rerun()
@@ -118,7 +155,7 @@ if uploaded_file is not None:
             agg_col = gcol2.selectbox("Aggregate column (numeric):", numeric_cols)
             agg_func = gcol3.selectbox("Aggregation:", ["mean", "sum", "count", "min", "max"])
 
-            if st.button("Run Group Analysis"):
+            if st.button("▶️ Run Group Analysis"):
                 group_result = get_group_summary(st.session_state["df"], group_col, agg_col, agg_func)
                 st.dataframe(group_result)
 
@@ -127,7 +164,7 @@ if uploaded_file is not None:
             numeric_cols = current_df.select_dtypes(include="number").columns.tolist()
             all_cols = current_df.columns.tolist()
 
-            st.subheader("Ask AI to Create a Chart")
+            st.subheader("🤖 Ask AI to Create a Chart")
             user_query = st.text_input(
                 "Describe the chart you want:",
                 placeholder="e.g. show me age distribution",
@@ -163,7 +200,7 @@ if uploaded_file is not None:
                         st.error(f"Could not create chart: {chart_error}")
 
             st.divider()
-            st.subheader("Auto Chart (recommended for you)")
+            st.subheader("⚡ Auto Chart (recommended for you)")
             acol1, acol2 = st.columns(2)
             auto_col1 = acol1.selectbox("Column 1:", all_cols, key="auto_col1")
             auto_col2 = acol2.selectbox("Column 2 (optional):", [None] + all_cols, key="auto_col2")
@@ -174,7 +211,7 @@ if uploaded_file is not None:
                 st.plotly_chart(fig)
 
             st.divider()
-            st.subheader("Manual Charts")
+            st.subheader("🛠️ Manual Charts")
 
             chart_type_manual = st.selectbox(
                 "Choose chart type:",
@@ -211,7 +248,7 @@ if uploaded_file is not None:
                     st.plotly_chart(heatmap_chart(corr))
 
         with tab6:
-            st.subheader("Ask Questions About Your Data")
+            st.subheader("💬 Ask Questions About Your Data")
             st.caption("Example: What's the average age? How many people survived? What's the most common embarkation point?")
 
             question = st.text_input("Type your question:", key="qa_input")
@@ -232,12 +269,12 @@ if uploaded_file is not None:
                 st.divider()
                 st.subheader("Conversation History")
                 for q, a in reversed(st.session_state["chat_history"]):
-                    st.markdown(f"**Q: {q}**")
-                    st.write(a)
+                    st.markdown(f"**🙋 Q: {q}**")
+                    st.write(f"🤖 {a}")
                     st.markdown("---")
 
         with tab7:
-            st.subheader("Automatic Key Insights")
+            st.subheader("✨ Automatic Key Insights")
             st.caption("Let AI analyze your dataset and surface the most important patterns.")
 
             if st.button("Generate Insights"):
@@ -249,7 +286,7 @@ if uploaded_file is not None:
                 st.markdown(st.session_state["insights"])
 
             st.divider()
-            st.subheader("Recommendations")
+            st.subheader("💡 Recommendations")
             st.caption("Practical suggestions for working with this dataset.")
 
             if st.button("Generate Recommendations"):
@@ -261,7 +298,7 @@ if uploaded_file is not None:
                 st.markdown(st.session_state["recommendations"])
 
             st.divider()
-            st.subheader("Download Full Report")
+            st.subheader("📄 Download Full Report")
 
             if st.button("Generate PDF Report"):
                 insights_text = st.session_state.get("insights", "")
@@ -281,7 +318,7 @@ if uploaded_file is not None:
 
             if st.session_state.get("pdf_buffer"):
                 st.download_button(
-                    label="Download PDF Report",
+                    label="⬇️ Download PDF Report",
                     data=st.session_state["pdf_buffer"],
                     file_name="data_analyst_report.pdf",
                     mime="application/pdf",
@@ -291,4 +328,4 @@ if uploaded_file is not None:
         st.error(f"Error loading file: {e}")
 else:
     st.session_state.clear()
-    st.info("Upload a CSV or Excel file to get started.")
+    st.info("👆 Upload a CSV or Excel file to get started.")
